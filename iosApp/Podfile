@@ -1,0 +1,9 @@
+target 'iosApp' do
+  use_frameworks!
+  platform :ios, '13.0'
+
+  # naver-map-compose 라이브러리를 로컬 경로로 연결합니다.
+  pod 'naver_map_compose', :path => '../naver-map-compose'
+  # 의존성 프레임워크들을 명시적으로 추가하여 링커 에러 해결
+  pod 'NMapsMap'
+end

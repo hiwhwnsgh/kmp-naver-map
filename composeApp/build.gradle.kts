@@ -31,6 +31,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
+            implementation(project(":naver-map-compose")) // 라이브러리 모듈 의존성 추가
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -76,4 +77,3 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
-

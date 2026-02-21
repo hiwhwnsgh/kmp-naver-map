@@ -28,7 +28,11 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven {
+            url = java.net.URI("https://repository.map.naver.com/archive/maven")
+        }
     }
 }
 
 include(":composeApp")
+include(":naver-map-compose")
