@@ -9,9 +9,14 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.mavenPublish)
-    signing // 서명 플러그인 적용
+    signing
 }
 
+// 1. 루트 프로젝트에서 정의한 통합 시크릿 로더 가져오기
+@Suppress("UNCHECKED_CAST")
+val getPublishSecret = rootProject.extra.get("getPublishSecret") as (String) -> String?
+
+// 프로젝트 그룹 및 버전 설정 (gradle.properties에서 가져옴)
 group = project.property("GROUP") as String
 version = project.property("VERSION_NAME") as String
 
@@ -20,6 +25,8 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+        // Maven Central 배포를 위해 release 빌드 변수 지정
+        publishLibraryVariants("release")
     }
     
     iosArm64()
@@ -28,7 +35,7 @@ kotlin {
     cocoapods {
         version = project.version.toString()
         summary = "Naver Map SDK wrapper for Kotlin Multiplatform Compose"
-        homepage = "https://github.com/jun-cho/ComposeNaverMap"
+        homepage = project.property("POM_URL") as String
         ios.deploymentTarget = "13.0"
         
         podfile = project.file("../iosApp/Podfile")
@@ -49,6 +56,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
         }
         androidMain.dependencies {
             implementation(libs.naver.map.sdk)
@@ -58,7 +66,7 @@ kotlin {
 }
 
 android {
-    namespace = "io.github.jun.maps.naver.compose"
+    namespace = "io.github.hiwhwnsgh.maps.naver.compose"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -69,53 +77,55 @@ android {
     }
 }
 
-// 서명 정보 처리 및 명시적 주입
-val keyId = project.findProperty("signing.keyId") as? String
-val password = project.findProperty("signing.password") as? String
-val secretKeyBase64 = project.findProperty("signing.secretKeyBase64") as? String
+// 2. GPG 서명 설정
+val keyId = getPublishSecret("signing.keyId")
+val password = getPublishSecret("signing.password")
+val secretKeyBase64 = getPublishSecret("signing.secretKeyBase64")
 
 if (!secretKeyBase64.isNullOrBlank() && !keyId.isNullOrBlank()) {
-    val decodedKey = String(Base64.getDecoder().decode(secretKeyBase64.trim()))
+    val decodedKey = String(Base64.getMimeDecoder().decode(secretKeyBase64.trim()))
+        .replace("\r\n", "\n")
         .replace("\\n", "\n")
-    
-    // Gradle Signing 확장을 통해 서명자(Signatory)를 명시적으로 설정
+
     signing {
         @Suppress("UnstableApiUsage")
         useInMemoryPgpKeys(keyId, decodedKey, password ?: "")
-        // 말씀하신 sign(publishing.publications)와 유사한 역할을 vanniktech 플러그인이 수행하지만, 
-        // 여기서 명시적으로 sign을 호출하여 안전하게 설정합니다.
-        sign(publishing.publications)
     }
 }
 
-// Vanniktech Maven Publish 설정
+// 3. Vanniktech Maven Publish 설정 (외부 라이브러리 배포 규격)
 mavenPublishing {
+    // coordinates()를 직접 호출하지 않습니다.
+    // 플러그인이 프로젝트의 group, version, 모듈명(artifactId)을 자동으로 사용합니다.
+    
+    // 태스크가 항상 생성되도록 호출 (조건문 제거)
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     
-    // 이미 위에서 signing 블록을 통해 설정했으므로, 
-    // 플러그인에게 서명 작업이 필요함을 알립니다.
-    signAllPublications()
+    // 서명 정보가 있을 때만 서명 프로세스 활성화
+    if (!keyId.isNullOrBlank() && !secretKeyBase64.isNullOrBlank()) {
+        signAllPublications()
+    }
 
     pom {
-        name.set(project.property("POM_NAME") as String)
-        description.set(project.property("POM_DESCRIPTION") as String)
-        url.set(project.property("POM_URL") as String)
+        name.set(project.findProperty("POM_NAME")?.toString() ?: "Naver Map Compose")
+        description.set(project.findProperty("POM_DESCRIPTION")?.toString() ?: "A Kotlin Multiplatform Jetpack Compose wrapper for Naver Map SDK.")
+        url.set(project.findProperty("POM_URL")?.toString() ?: "https://github.com/hiwhwnsgh/ComposeNaverMap")
         licenses {
             license {
-                name.set(project.property("POM_LICENCE_NAME") as String)
-                url.set(project.property("POM_LICENCE_URL") as String)
+                name.set(project.findProperty("POM_LICENCE_NAME")?.toString() ?: "The Apache Software License, Version 2.0")
+                url.set(project.findProperty("POM_LICENCE_URL")?.toString() ?: "http://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
         scm {
-            url.set(project.property("POM_URL") as String)
-            connection.set(project.property("POM_SCM_CONNECTION") as String)
-            developerConnection.set(project.property("POM_SCM_DEV_CONNECTION") as String)
+            url.set(project.findProperty("POM_URL")?.toString() ?: "https://github.com/hiwhwnsgh/ComposeNaverMap")
+            connection.set(project.findProperty("POM_SCM_CONNECTION")?.toString() ?: "scm:git:github.com/hiwhwnsgh/ComposeNaverMap.git")
+            developerConnection.set(project.findProperty("POM_SCM_DEV_CONNECTION")?.toString() ?: "scm:git:ssh://github.com/hiwhwnsgh/ComposeNaverMap.git")
         }
         developers {
             developer {
-                id.set(project.property("POM_DEVELOPER_ID") as String)
-                name.set(project.property("POM_DEVELOPER_NAME") as String)
-                email.set(project.property("POM_DEVELOPER_EMAIL") as String)
+                id.set(project.findProperty("POM_DEVELOPER_ID")?.toString() ?: "hiwhwnsgh")
+                name.set(project.findProperty("POM_DEVELOPER_NAME")?.toString() ?: "Jun Cho")
+                email.set(project.findProperty("POM_DEVELOPER_EMAIL")?.toString() ?: "hiwhwnsgh@gmail.com")
             }
         }
     }

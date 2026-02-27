@@ -1,0 +1,28 @@
+PODS:
+  - naver_map_compose (0.0.1):
+    - NMapsMap (= 3.23.1)
+  - NMapsGeometry (1.0.2)
+  - NMapsMap (3.23.1):
+    - NMapsGeometry
+
+DEPENDENCIES:
+  - naver_map_compose (from `../naver-map-compose`)
+  - NMapsMap
+
+SPEC REPOS:
+  trunk:
+    - NMapsGeometry
+    - NMapsMap
+
+EXTERNAL SOURCES:
+  naver_map_compose:
+    :path: "../naver-map-compose"
+
+SPEC CHECKSUMS:
+  naver_map_compose: 3625fc9fb3e93ac97ae8df6173d09e25836e5805
+  NMapsGeometry: 4e02554fa9880ef02ed96b075dc84355d6352479
+  NMapsMap: b4272a60dcbb8bccb206c632a133cae27a160031
+
+PODFILE CHECKSUM: 0ca3d43ba7aecd41302c2ebf0a75d5021012c0b1
+
+COCOAPODS: 1.16.2
