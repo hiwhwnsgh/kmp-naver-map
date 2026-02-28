@@ -2,17 +2,21 @@ package io.github.jun.maps.naver.compose.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.naver.maps.map.MapView
+import io.github.jun.maps.naver.compose.NaverMapSdk
 import io.github.jun.maps.naver.compose.controller.AndroidNaverMapController
 import io.github.jun.maps.naver.compose.controller.INaverMapController
 import io.github.jun.maps.naver.compose.state.NaverMapState
+import com.naver.maps.map.NaverMapSdk as NativeNaverMapSdk
 
 @Composable
 actual fun NaverMapView(
@@ -23,8 +27,18 @@ actual fun NaverMapView(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val mapView = remember { MapView(context) }
+    val currentOnMapReady by rememberUpdatedState(onMapReady)
 
-    // Lifecycle observer to handle MapView lifecycle
+    // SDK 초기화
+    DisposableEffect(Unit) {
+        if (NaverMapSdk.clientId.isNotEmpty()) {
+            NativeNaverMapSdk.getInstance(context).client =
+                NativeNaverMapSdk.NcpKeyClient(NaverMapSdk.clientId)
+        }
+        onDispose { }
+    }
+
+    // Lifecycle 관리
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -36,21 +50,32 @@ actual fun NaverMapView(
                 else -> {}
             }
         }
+
+        // 이미 진행된 lifecycle 상태 수동 보정
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+            mapView.onCreate(null)
+        }
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            mapView.onResume()
+        }
+
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            mapView.onDestroy()
         }
     }
 
     AndroidView(
-        factory = { mapView },
+        factory = {
+            mapView.apply {
+                getMapAsync { naverMap ->
+                    state._context = context
+                    state.naverMap = naverMap
+                    currentOnMapReady(AndroidNaverMapController(naverMap))
+                }
+            }
+        },
         modifier = modifier
-    ) { view ->
-        state._context = context // Store the context in state
-        view.getMapAsync { naverMap ->
-            state.naverMap = naverMap
-            val controller = AndroidNaverMapController(naverMap)
-            onMapReady(controller)
-        }
-    }
+    )
 }

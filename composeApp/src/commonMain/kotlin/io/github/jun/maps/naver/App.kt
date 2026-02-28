@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.jun.maps.naver.component.SampleScaffold
+import io.github.jun.maps.naver.compose.NaverMapSdkProvider
 import io.github.jun.maps.naver.screen.*
 
 sealed class Screen(val route: String, val title: String) {
@@ -23,46 +24,49 @@ sealed class Screen(val route: String, val title: String) {
 fun App() {
     val navController = rememberNavController()
 
-    MaterialTheme {
-        NavHost(navController = navController, startDestination = Screen.Home.route) {
-            composable(Screen.Home.route) {
-                HomeScreen(onNavigate = { screen ->
-                    navController.navigate(screen.route)
-                })
-            }
-            composable(Screen.Marker.route) {
-                SampleScaffold(Screen.Marker.title, onBack = { navController.popBackStack() }) {
-                    MarkerDemoScreen()
+    // 1. Secrets 객체(빌드 시 생성됨)를 사용하여 클라이언트 ID 참조
+    NaverMapSdkProvider(clientId = "NAVER_Client_ID") {
+        MaterialTheme {
+            NavHost(navController = navController, startDestination = Screen.Home.route) {
+                composable(Screen.Home.route) {
+                    HomeScreen(onNavigate = { screen ->
+                        navController.navigate(screen.route)
+                    })
                 }
-            }
-            composable(Screen.Path.route) {
-                SampleScaffold(Screen.Path.title, onBack = { navController.popBackStack() }) {
-                    PathDemoScreen()
+                composable(Screen.Marker.route) {
+                    SampleScaffold(Screen.Marker.title, onBack = { navController.popBackStack() }) {
+                        MarkerDemoScreen()
+                    }
                 }
-            }
-            composable(Screen.ArrowPath.route) {
-                SampleScaffold(Screen.ArrowPath.title, onBack = { navController.popBackStack() }) {
-                    ArrowPathDemoScreen()
+                composable(Screen.Path.route) {
+                    SampleScaffold(Screen.Path.title, onBack = { navController.popBackStack() }) {
+                        PathDemoScreen()
+                    }
                 }
-            }
-            composable(Screen.InfoWindow.route) {
-                SampleScaffold(Screen.InfoWindow.title, onBack = { navController.popBackStack() }) {
-                    InfoWindowDemoScreen()
+                composable(Screen.ArrowPath.route) {
+                    SampleScaffold(Screen.ArrowPath.title, onBack = { navController.popBackStack() }) {
+                        ArrowPathDemoScreen()
+                    }
                 }
-            }
-            composable(Screen.Circle.route) {
-                SampleScaffold(Screen.Circle.title, onBack = { navController.popBackStack() }) {
-                    CircleDemoScreen()
+                composable(Screen.InfoWindow.route) {
+                    SampleScaffold(Screen.InfoWindow.title, onBack = { navController.popBackStack() }) {
+                        InfoWindowDemoScreen()
+                    }
                 }
-            }
-            composable(Screen.MapControls.route) {
-                SampleScaffold(Screen.MapControls.title, onBack = { navController.popBackStack() }) {
-                    MapControlsDemoScreen()
+                composable(Screen.Circle.route) {
+                    SampleScaffold(Screen.Circle.title, onBack = { navController.popBackStack() }) {
+                        CircleDemoScreen()
+                    }
                 }
-            }
-            composable(Screen.Location.route) {
-                SampleScaffold(Screen.Location.title, onBack = { navController.popBackStack() }) {
-                    LocationDemoScreen()
+                composable(Screen.MapControls.route) {
+                    SampleScaffold(Screen.MapControls.title, onBack = { navController.popBackStack() }) {
+                        MapControlsDemoScreen()
+                    }
+                }
+                composable(Screen.Location.route) {
+                    SampleScaffold(Screen.Location.title, onBack = { navController.popBackStack() }) {
+                        LocationDemoScreen()
+                    }
                 }
             }
         }

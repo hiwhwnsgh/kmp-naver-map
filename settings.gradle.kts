@@ -36,3 +36,4 @@ dependencyResolutionManagement {
 
 include(":composeApp")
 include(":naver-map-compose")
+include(":naver-map-compose-gradle-plugin")

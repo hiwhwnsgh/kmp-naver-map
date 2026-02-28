@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -7,6 +8,24 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
+
+// 1. 시크릿 로더 정의
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream ->
+        localProperties.load(stream)
+    }
+}
+
+fun getSecret(key: String): String {
+    return System.getenv(key) 
+        ?: project.findProperty(key)?.toString() 
+        ?: localProperties.getProperty(key)
+        ?: ""
+}
+
+val naverClientId = getSecret("NAVER_CLIENT_ID")
 
 kotlin {
     androidTarget {
@@ -30,18 +49,41 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
         }
-        commonMain.dependencies {
-            implementation(project(":naver-map-compose")) // 라이브러리 모듈 의존성 추가
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.navigation.compose)
+        commonMain {
+            // 2. BuildConfig 처럼 사용할 수 있도록 소스 생성 또는 Config 주입
+            val packageName = "io.github.jun.maps.naver"
+            val generateSecrets = tasks.register("generateSecrets") {
+                val outDir = project.layout.buildDirectory.dir("generated/secrets/kotlin/io/github/jun/maps/naver")
+                outputs.dir(outDir)
+                doLast {
+                    val secretsFile = outDir.get().file("Secrets.kt").asFile
+                    secretsFile.parentFile.mkdirs()
+                    secretsFile.writeText(
+                        """
+                        package $packageName
+                        
+                        object Secrets {
+                            const val NAVER_CLIENT_ID = "$naverClientId"
+                        }
+                        """.trimIndent()
+                    )
+                }
+            }
 
+            kotlin.srcDir(project.layout.buildDirectory.dir("generated/secrets/kotlin"))
+            
+            dependencies {
+                implementation(project(":naver-map-compose"))
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation(libs.navigation.compose)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
