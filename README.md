@@ -77,9 +77,10 @@ NaverMap(...) {
 
 ## Contributing
 
-This project is under active development. Bug reports and feature requests (PRs) are always welcome!
+Contributions are welcome! If you're interested in helping out, please check out our [Contributing Guide](CONTRIBUTING.md) to learn how to get started.
 
 ## License
 
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
 Copyright 2024 Jun Cho
-Licensed under the Apache License, Version 2.0 (the "License");
